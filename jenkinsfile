@@ -1,0 +1,72 @@
+pipeline {
+ agent { label 'test' }
+
+ stages
+ {
+  stage('Checkout')
+  {
+   steps { 
+    git branch: 'master', url: 'https://github.com/gpreddyjgl/testcicd.git'
+   }
+  }
+
+  stage('Build War')
+  {
+   steps { 
+    sh "mvn clean package"
+   }
+  }
+ 
+  stage('Upload Artifactory') 
+  {          
+   steps {          
+    script { 
+	    /* Define the Artifactory Server details */
+        def server = Artifactory.server 'myartifactory'
+        def uploadSpec = """{
+            "files": [{
+            "pattern": "target/samplewar.war", 
+            "target": "demo"                   
+            }]
+        }"""
+        
+        /* Upload the war to  Artifactory repo */
+        server.upload(uploadSpec)
+    }
+   }
+  }
+
+ stage('Build Image') 
+  {
+    steps{
+      script {
+          docker.withRegistry( 'https://registry.hub.docker.com', 'dockerhub' ) {
+             /* Build Docker Image locally */
+             myImage = docker.build("gpreddyjgl/prav_demo")
+
+             /* Push the container to the Registry */
+             myImage.push()
+          }
+      }
+    }
+  }
+
+ stage('SonarQube Analysis') {
+    steps{
+     withSonarQubeEnv('mysonarqube') {
+      sh 'mvn sonar:sonar'
+     } 
+    }
+  }
+    
+ }
+ post 
+ {
+  success {
+    echo 'JENKINS PIPELINE SUCCESSFUL'
+  }
+  failure {
+    mail body: 'Pipeline Details', subject: 'The Pipeline failed', to: 'pravgadd@gmail.com'
+  }
+ }
+}
