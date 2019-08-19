@@ -1,7 +1,4 @@
-# seminar: Dec 06
-Demo project used for seminar
-=============================
-($ git clone https://github.com/scmlearningcentre/seminar.git seminar)
+
 I) Provision Server
   1. Create Linux containers based on Ubuntu 
      $ docker run -it ubuntu /bin/bash
